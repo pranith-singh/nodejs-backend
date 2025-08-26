@@ -1,11 +1,27 @@
-const http = require('http');
+const sql = require("mssql");
+const { DefaultAzureCredential } = require("@azure/identity");
+const accessToken = require("ms-rest-nodeauth");
 
-const server = http.createServer((request, response) => {
-    response.writeHead(200, {"Content-Type": "text/plain"});
-    response.end("Hello from the backend web app!");
-});
+async function getToken() {
+  const credential = new DefaultAzureCredential();
+  const token = await credential.getToken("https://database.windows.net/");
+  return token.token;
+}
 
-const port = process.env.PORT || 1337;
-server.listen(port);
+async function connectDb() {
+  const token = await getToken();
+  const pool = await sql.connect({
+    server: "backendserver234.database.windows.net",
+    database: "Thakur",
+    options: { encrypt: true },
+    authentication: {
+      type: "azure-active-directory-access-token",
+      options: { token: token }
+    }
+  });
 
-console.log("Server running at http://localhost:%d", port);
+  const result = await pool.request().query("SELECT GETDATE() AS currentTime");
+  console.log(result.recordset);
+}
+
+connectDb().catch(err => console.error("DB Error:", err));
