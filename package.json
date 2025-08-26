@@ -9,4 +9,4 @@
         "start": "node index.js"
     }
 }
-npm install mssql
+
